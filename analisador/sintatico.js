@@ -107,20 +107,25 @@ export class AnalisadorSintatico {
   // ---------- Regras ----------
 
   declaracaoVariaveis() {
-    console.log(">> ENTROU em declaracaoVariaveis()");
-  
     const nomes = [];
+    
+    // Coleta múltimos identificadores separados por vírgula
     do {
-      nomes.push(this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome da variável.'));
+      const nome = this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome da variável.');
+      nomes.push(nome);
     } while (this.isTokenTypeIgualA(TiposToken.VIRGULA));
   
-    this.consumirToken(TiposToken.DOIS_PONTOS, 'Esperado ":" após o nome da variável.');
+    this.consumirToken(TiposToken.DOIS_PONTOS, 'Esperado ":" após o(s) nome(s) da(s) variável(is).');
+  
     const tipo = this.tipoDado();
+  
     this.consumirToken(TiposToken.PONTO_VIRGULA, 'Esperado ";" após declaração de variável.');
   
     const variaveis = nomes.map(nome => new Decl.Var(nome.linha, nome, tipo));
     return new Decl.VarDeclaracoes(nomes[0].linha, variaveis);
   }
+  
+  
   
   
 
@@ -147,6 +152,7 @@ export class AnalisadorSintatico {
 
 declaracao() {
     try {
+      console.log('Analisando token:', this.espiar());
       if (this.isTokenTypeIgualA(TiposToken.SE)) return this.seDeclaracao();
       if (this.isTokenTypeIgualA(TiposToken.PARA)) return this.paraDeclaracao();
       if (this.isTokenTypeIgualA(TiposToken.ENQUANTO)) return this.enquantoDeclaracao();
@@ -239,6 +245,7 @@ declaracao() {
   
   atribuicao() {
     const expr = this.ou();
+    console.log("Expr no início de atribuição:", expr);
   
     if (this.isTokenTypeIgualA(TiposToken.ATRIBUICAO)) {
       const operador = this.anterior();
@@ -357,6 +364,9 @@ declaracao() {
   primario() {
     if (this.isTokenTypeIgualA(TiposToken.IDENTIFICADOR)) {
       const nome = this.anterior();
+      console.log("Reconheceu variavel:", nome.lexema)
+      return new Expr.Variavel(nome.linha, nome);
+    
       if (this.isTokenTypeIgualA(TiposToken.ESQ_COLCHETE)) {
         const index = this.ou();
         this.consumirToken(TiposToken.DIR_COLCHETE, 'Esperado "]"');
