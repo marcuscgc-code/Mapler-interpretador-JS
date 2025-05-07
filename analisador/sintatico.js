@@ -19,41 +19,33 @@ export class AnalisadorSintatico {
   
     try {
       if (this.isTokenTypeIgualA(TiposToken.TIPO_MODULO)) {
-        // Caso tenha a palavra-chave "modulo", trata como bloco de módulo
         const nome = this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome do módulo');
-        const corpoBloco = new Decl.Bloco(nome.linha, this.bloco());
-  
-        // fim modulo opcional
-        if (this.isTokenTypeIgualA(TiposToken.FIM)) {
-          this.isTokenTypeIgualA(TiposToken.TIPO_MODULO); // consome "modulo" se existir
-          this.isTokenTypeIgualA(TiposToken.PONTO_VIRGULA); // consome ";" se existir
+        
+        this.consumirToken(TiposToken.VARIAVEIS, 'Esperado "variaveis"');
+      
+        const declaracoes = [];
+      
+        // Pega declarações de variáveis
+        while (!this.isFim() && this.espiar().tipo !== TiposToken.INICIO) {
+          declaracoes.push(this.declaracaoVariaveis());
         }
-  
-        return new Decl.Modulo(nome.linha, nome, corpoBloco);
-      }
-  
-      // Começa com "variaveis"
-      const variaveisToken = this.consumirToken(TiposToken.VARIAVEIS, 'Esperado "variaveis"');
-  
-      while (!this.isFim() && this.espiar().tipo !== TiposToken.INICIO) {
-        variaveis.push(this.declaracaoVariaveis());
-      }
-  
-      this.consumirToken(TiposToken.INICIO, 'Esperado "inicio"');
-  
-      while (!this.isFim() && this.espiar().tipo !== TiposToken.FIM) {
-        corpo.push(this.declaracao());
-      }
-  
-      const fimToken = this.consumirToken(TiposToken.FIM, 'Esperado "fim"');
-  
-      return new Decl.Programa(
-        variaveisToken.linha,
-        variaveis,
-        corpo,
-        [], // não há modulos definidos no final
-        new Decl.Fim(fimToken.linha, fimToken)
-      );
+      
+        this.consumirToken(TiposToken.INICIO, 'Esperado "inicio"');
+      
+        // ⚠️ Aqui é onde antes estava pulando a linha `a <- 10;`
+        while (!this.isFim() && this.espiar().tipo !== TiposToken.FIM) {
+          const decl = this.declaracao();
+          if (decl !== null) declaracoes.push(decl);
+        }
+      
+        // Consome fim modulo;
+        this.consumirToken(TiposToken.FIM, 'Esperado "fim modulo"');
+        this.consumirToken(TiposToken.TIPO_MODULO, 'Esperado "modulo"');
+        this.consumirToken(TiposToken.PONTO_VIRGULA, 'Esperado ";"');
+      
+        const bloco = new Decl.Bloco(nome.linha, declaracoes);
+        return new Decl.Modulo(nome.linha, nome, bloco);
+      }      
     } catch (erro) {
       this.eventosService.notificar('ERRO', erro);
       return null;
