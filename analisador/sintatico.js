@@ -13,44 +13,37 @@ export class AnalisadorSintatico {
     this.tokens = tokens;
     this.index = 0;
   
-    const variaveis = [];
-    const corpo = [];
-    const modulos = [];
-  
     try {
       if (this.isTokenTypeIgualA(TiposToken.TIPO_MODULO)) {
         const nome = this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome do módulo');
         
         this.consumirToken(TiposToken.VARIAVEIS, 'Esperado "variaveis"');
-      
         const declaracoes = [];
-      
-        // Pega declarações de variáveis
+  
         while (!this.isFim() && this.espiar().tipo !== TiposToken.INICIO) {
           declaracoes.push(this.declaracaoVariaveis());
         }
-      
+  
         this.consumirToken(TiposToken.INICIO, 'Esperado "inicio"');
-      
-        // ⚠️ Aqui é onde antes estava pulando a linha `a <- 10;`
+  
         while (!this.isFim() && this.espiar().tipo !== TiposToken.FIM) {
           const decl = this.declaracao();
           if (decl !== null) declaracoes.push(decl);
         }
-      
-        // Consome fim modulo;
+  
         this.consumirToken(TiposToken.FIM, 'Esperado "fim modulo"');
         this.consumirToken(TiposToken.TIPO_MODULO, 'Esperado "modulo"');
         this.consumirToken(TiposToken.PONTO_VIRGULA, 'Esperado ";"');
-      
+  
         const bloco = new Decl.Bloco(nome.linha, declaracoes);
         return new Decl.Modulo(nome.linha, nome, bloco);
-      }      
+      }
     } catch (erro) {
       this.eventosService.notificar('ERRO', erro);
       return null;
     }
   }
+  
   
   // Navegação nos tokens
   isFim() {
@@ -222,12 +215,15 @@ declaracao() {
     const expressao = this.expressao();
     this.consumirToken(TiposToken.PONTO_VIRGULA, 'Esperado ";"');
   
+    // Se for só um identificador, pode ser chamada de módulo
     if (expressao.tipo === 'Variavel') {
       return new Decl.ChamadaModulo(expressao.linha, expressao.nome);
     }
   
+    // Se for atribuição, ou expressão binária, ou qualquer outra, retorna normal
     return new Decl.Expressao(expressao.linha, expressao);
   }
+  
 //   ---------------------------------------
 // EXPRESSOES ATRIBUIR, SOMAR, OU
 // ---------------------------------------------
@@ -356,16 +352,18 @@ declaracao() {
   primario() {
     if (this.isTokenTypeIgualA(TiposToken.IDENTIFICADOR)) {
       const nome = this.anterior();
-      console.log("Reconheceu variavel:", nome.lexema)
-      return new Expr.Variavel(nome.linha, nome);
+      console.log("Reconheceu variavel:", nome.lexema);
     
+      // Verifica se é uma variável com índice (array)
       if (this.isTokenTypeIgualA(TiposToken.ESQ_COLCHETE)) {
         const index = this.ou();
         this.consumirToken(TiposToken.DIR_COLCHETE, 'Esperado "]"');
         return new Expr.VariavelArray(nome.linha, nome, index);
       }
+    
       return new Expr.Variavel(nome.linha, nome);
     }
+      
   
     if (this.isTokenTypeIgualA(TiposToken.VERDADEIRO))
       return new Expr.Literal(this.anterior().linha, true, this.anterior());

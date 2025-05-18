@@ -66,6 +66,9 @@ export class Interpretador {
     if (!expr) return null;
 
     switch (expr.tipo) {
+      // Caso especeficio adicionado pra ler os parenteses
+      case "ExpParentizada":
+        return this.avaliarExpressao(expr.grupo.expressao);
       case "Literal":
         return expr.valor;
       case "Variavel":
