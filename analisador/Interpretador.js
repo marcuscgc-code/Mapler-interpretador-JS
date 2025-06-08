@@ -23,44 +23,88 @@ export class Interpretador {
   }
 
   executarDeclaracao(declaracao) {
-    if (!declaracao) return;
+  if (!declaracao) return;
 
-    switch (declaracao.tipo) {
-      case "VarDeclaracoes":
-        for (const variavel of declaracao.variaveis) {
-          this.variaveis.set(variavel.nome.lexema, null);
-        }
-        break;
+  switch (declaracao.tipo) {
+    case "VarDeclaracoes":
+      for (const variavel of declaracao.variaveis) {
+        this.variaveis.set(variavel.nome.lexema, null);
+      }
+      break;
 
-      case "Expressao":
-        this.avaliarExpressao(declaracao.expressao);
-        break;
+    case "Expressao":
+      this.avaliarExpressao(declaracao.expressao);
+      break;
 
-      case "Escreva":
-        for (const expr of declaracao.expressoes) {
-          const valor = this.avaliarExpressao(expr);
-          this.exibirSaida(valor);
-        }
-        break;
+    case "Escreva":
+      for (const expr of declaracao.expressoes) {
+        const valor = this.avaliarExpressao(expr);
+        this.exibirSaida(valor);
+      }
+      break;
 
-      case "Ler":
-        this.executarLeitura(declaracao.atribuicao);
-        break;
+    case "Se":
+      this.executarSe(declaracao);
+      break;
 
-      case "Se":
-        this.executarSe(declaracao);
-        break;
+    case "Bloco":
+      for (const cmd of declaracao.declaracoes) {
+        this.executarDeclaracao(cmd);
+      }
+      break;
+    case "Enquanto":
+      this.executarEnquanto(declaracao);
+    break;
+    case "Para":
+      this.executarPara(declaracao);
+    break;
+    case "Repita":
+      this.executarRepita(declaracao);
+     break;
 
-      case "Bloco": // importante para executar blocos internos
-        for (const cmd of declaracao.declaracoes) {
-          this.executarDeclaracao(cmd);
-        }
-        break;
 
-      default:
-        this.erro("Declaração desconhecida: " + declaracao.tipo);
+    default:
+      this.erro("Declaração desconhecida: " + declaracao.tipo);
+  }
+}
+// FUNCOES DOS COMANDOS CHAMADOS DO EXECUTAR DECLARACOES
+ executarSe(decl) {
+  const condicao = this.avaliarExpressao(decl.condicao);
+  const bloco = condicao ? decl.entao : decl.senao;
+
+  if (bloco && bloco.declaracoes) {
+    for (const cmd of bloco.declaracoes) {
+      this.executarDeclaracao(cmd);
     }
   }
+}
+executarEnquanto(decl) {
+  while (this.avaliarExpressao(decl.condicao)) {
+    for (const cmd of decl.corpo.declaracoes) {
+      this.executarDeclaracao(cmd);
+    }
+  }
+}
+executarPara(decl) {
+  // Inicializa a variável
+  this.avaliarExpressao(decl.inicial);
+
+  while (this.avaliarExpressao(decl.condicao)) {
+    for (const cmd of decl.corpo.declaracoes) {
+      this.executarDeclaracao(cmd);
+    }
+    this.avaliarExpressao(decl.incremento); // incremento após cada ciclo
+  }
+}
+executarRepita(decl) {
+  do {
+    for (const cmd of decl.corpo.declaracoes) {
+      this.executarDeclaracao(cmd);
+    }
+  } while (!this.avaliarExpressao(decl.condicao));
+}
+
+
 
   avaliarExpressao(expr) {
     if (!expr) return null;
