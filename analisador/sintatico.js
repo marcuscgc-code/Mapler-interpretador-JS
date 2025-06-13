@@ -90,25 +90,34 @@ export class AnalisadorSintatico {
   
 
   // ---------- Regras ----------
+declaracaoVariaveis() {
+  const nomes = [];
 
-  declaracaoVariaveis() {
-    const nomes = [];
-    
-    // Coleta múltimos identificadores separados por vírgula
-    do {
-      const nome = this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome da variável.');
-      nomes.push(nome);
-    } while (this.isTokenTypeIgualA(TiposToken.VIRGULA));
-  
-    this.consumirToken(TiposToken.DOIS_PONTOS, 'Esperado ":" após o(s) nome(s) da(s) variável(is).');
-  
-    const tipo = this.tipoDado();
-  
-    this.consumirToken(TiposToken.PONTO_VIRGULA, 'Esperado ";" após declaração de variável.');
-  
-    const variaveis = nomes.map(nome => new Decl.Var(nome.linha, nome, tipo));
-    return new Decl.VarDeclaracoes(nomes[0].linha, variaveis);
-  }
+  do {
+    const nome = this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome da variável.');
+
+    let tamanho = null;
+    if (this.checar(TiposToken.ESQ_COLCHETE)) {
+      this.avancar(); // consome [
+      const valor = this.consumirToken(TiposToken.INTEIRO, 'Esperado tamanho inteiro do vetor');
+      tamanho = valor.literal;
+      this.consumirToken(TiposToken.DIR_COLCHETE, 'Esperado "]"');
+    }
+
+    nomes.push({ nome, tamanho }); // 👈 salva nome e tamanho
+  } while (this.isTokenTypeIgualA(TiposToken.VIRGULA));
+
+  this.consumirToken(TiposToken.DOIS_PONTOS, 'Esperado ":" após o(s) nome(s)');
+  const tipo = this.tipoDado();
+  this.consumirToken(TiposToken.PONTO_VIRGULA, 'Esperado ";" após declaração.');
+
+  const variaveis = nomes.map(entry => 
+    new Decl.Var(entry.nome.linha, entry.nome, tipo, entry.tamanho)
+  );
+
+  return new Decl.VarDeclaracoes(nomes[0].nome.linha, variaveis);
+}
+
   
   
   

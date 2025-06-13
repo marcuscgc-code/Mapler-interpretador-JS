@@ -3,6 +3,9 @@ import { AnalisadorSintatico } from './sintatico.js';
 import { EventosService } from './eventosService.js';
 import { Interpretador } from './interpretador.js';
 
+
+
+
 const eventosService = new EventosService((tipo, mensagem) => {
   const consoleDiv = document.getElementById('saidaConsole');
   if (tipo === "ESCREVER") {
@@ -50,9 +53,9 @@ document.getElementById('executarBtn').addEventListener('click', () => {
     return;
   }
 
-  const consoleDiv = document.getElementById('saidaConsole');
-  consoleDiv.innerHTML = '';
+  document.getElementById('saidaConsole').innerHTML = '';
 
-  const interpretador = new Interpretador(eventosService); // precisa ser criado aqui
+  // 🔧 Cria nova instância sempre ao clicar no botão
+  const interpretador = new Interpretador(eventosService);
   interpretador.interpretar(window.astGerado);
 });
